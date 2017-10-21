@@ -1,6 +1,6 @@
 <template>
-  <form class="registration">
-    <input type="email" placeholder="E-mail" />
+  <form class="registration" method="post">
+    <input type="email" name="email" placeholder="E-mail" required />
     <input type="submit" :value='buttonValue'>
   </form>
 </template>
@@ -9,7 +9,7 @@
 export default {
   data () {
     return {
-      
+
     }
   }
 }

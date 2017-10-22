@@ -9,6 +9,10 @@ const maindb = "mongodb://localhost:27017/union";
 // Библиотка для усиления сложности
 const bcrypt = require('bcryptjs');
 
+// Поддержка Cookie файлов
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
 // Шаблонизатор Vue
 const expressVue = require('express-vue');
 // Общедоступные ресурсы
@@ -48,10 +52,28 @@ const lang = require('./lang/ru');
 const expressVueMiddleware = expressVue.init(vueOptions);
 app.use(expressVueMiddleware);
 
+// Проверка авторизации пользователя
+function isAuth(cook, callback){
+  const cookies_try = {};
+  cookies_try.hash = cook.changes;
+  mongo.select(maindb, 'cookies', cookies_try, function(result){
+    if(result.length){
+      if(result[0].userid.toString() === cook.userid)
+        callback(true);
+      else
+        callback(false);
+    }
+    else
+      callback(false);
+  })
+}
 
 app.get('/', function (req, res) {
   //TODO: Нет доступа не авторизованным пользователям
-  res.send('Express работает')
+  isAuth(req.cookies, function(result){
+    if(result) res.send('Express работает')
+    else res.redirect('/auth');
+  })
 })
 
 app.get('/registration', function (req, res) {
@@ -110,19 +132,38 @@ app.post('/auth', function(req, res) {
     if(result.length){
       const hash = result[0].password;
       if(bcrypt.compareSync(req.body.password, hash)){
-        //TODO: Перенаправлять пользователя на главную страницу
-        console.log('Все хорошо, вы авторизованы')
+
+        // Пользователь прошел авторизацию
+        let cookieuser = {};
+
+        // Генерируем hash по которому будем проверять подлинность id
+        var generatePassword = require('password-generator');
+        const password = generatePassword();
+        var salt = bcrypt.genSaltSync(10);
+        var hash_cookie = bcrypt.hashSync(password, salt);
+
+        cookieuser.userid = result[0]._id;
+        cookieuser.live = new Date(Date.now() + 60*60*24*30*1000);
+        cookieuser.hash = hash_cookie;
+
+        mongo.insert(maindb, 'cookies', cookieuser, function(result){
+          res.cookie('userid', cookieuser.userid, { expires: cookieuser.live, httpOnly: true });
+          res.cookie('changes', cookieuser.hash, { expires: cookieuser.live, httpOnly: true });
+          res.redirect('/');
+        })
       }else{
         //TODO: Отправлять сообщение клиенту
         console.log('Неверный пароль');
+        res.renderVue('authorisation', lang.authorisation);
       }
     }
     else{
       //TODO: Отправлять сообщение пользователю
       console.log('Нет пользователя с таким Email')
+      res.renderVue('authorisation', lang.authorisation);
     }
   })
-  res.renderVue('authorisation', lang.authorisation);
+
 });
 
 app.listen(3000, function () {

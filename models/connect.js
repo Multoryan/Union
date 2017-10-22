@@ -13,16 +13,18 @@ const assert = require('assert');
 // url - адрес базы данных ex: 'mongodb://localhost:27017/users'
 // collect - название коллекции ex: 'information'
 // data - данные на вставку в формате массива объектов ex: [{id: 1, name: myname}]
+// callback - Функция, вызываемая по завершению, в которую передается результат
 // TODO: Должна возвращать количество вставленных элементов массива, или false в случае ошибки
-exports.insert = (url, collect, data) => {
+exports.insert = (url, collect, data, callback) => {
   // Подключаемся к базе данных
   MongoClient.connect(url, function(err, db) {
     // Проверяем успешно ли подключение
     assert.equal(null, err);
     let collection = db.collection(collect);
-    collection.insertMany(data, function(err, result) {
+    collection.insert(data, function(err, result) {
       assert.equal(err, null);
       db.close();
+      callback(result);
     });
   });
 
@@ -41,7 +43,7 @@ exports.update = (url, collect, where, data) => {
     // Проверяем успешно ли подключение
     assert.equal(null, err);
     var collection = db.collection(collect);
-    collection.updateOne(where, data, function(err, result) {
+    collection.update(where, data, function(err, result) {
       assert.equal(err, null);
       db.close();
     });
@@ -52,20 +54,18 @@ exports.update = (url, collect, where, data) => {
 // url - адрес базы данных ex: 'mongodb://localhost:27017/users'
 // collect - название коллекции ex: 'information'
 // where - выборка из базы в формате объекта: {id: 1}
-exports.select = (url, collect, where) => {
-  let documents = false;
+// callback - Функция, вызываемая по завершению, в которую передается результат
+exports.select = (url, collect, where, callback) => {
   MongoClient.connect(url, function(err, db) {
     // Проверяем успешно ли подключение
     assert.equal(null, err);
     var collection = db.collection(collect);
     collection.find(where).toArray(function(err, docs) {
       assert.equal(err, null);
-      console.dir(docs);
-      documents = docs;
       db.close();
+      callback(docs);
     });
   });
-  return documents;
 }
 
 // Удаление из базы данных
@@ -78,7 +78,7 @@ exports.delete = (url, collect, where) => {
     // Проверяем успешно ли подключение
     assert.equal(null, err);
     var collection = db.collection(collect);
-    collection.deleteOne(where, function(err, result) {
+    collection.delete(where, function(err, result) {
       assert.equal(err, null);
       res = result;
       db.close();

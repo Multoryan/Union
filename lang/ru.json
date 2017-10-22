@@ -1,5 +1,9 @@
 {
   "registration": {
     "buttonValue": "Зарегистрироваться"
+  },
+  "authorisation": {
+    "placePass": "Пароль",
+    "buttonValue": "Авторизоваться"
   }
 }

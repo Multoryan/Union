@@ -1,8 +1,10 @@
 // Подключаем и испльзуем фреймворк для node - express
 const express = require('express')
 const app = express()
-// Подключаем драйвер для работы с mongodb
-const MongoClient = require("mongodb").MongoClient;
+
+// Подключение модуля работы с базой данных MongoDB
+const mongo = require('./models/connect.js');
+
 // Шаблонизатор Vue
 const expressVue = require('express-vue');
 // Общедоступные ресурсы
@@ -32,6 +34,7 @@ const vueOptions = {
         }
     }
 };
+
 // Загрузка файла с языком
 // TODO: Добавить автоопределение на основе req.acceptsLanguages()
 // TODO: Возможность изменять язык
@@ -50,12 +53,12 @@ app.get('/registration', function (req, res) {
   res.renderVue('registration',lang.registration);
 })
 
+// Парсинг форм из POST запросов
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/registration', function (req, res) {
-  connectToMongo();
   const email = req.body.email;
   // TODO: Проверка существует ли такой email в базе
   res.renderVue('registration',lang.registration);
@@ -68,25 +71,6 @@ app.get('/vue', function(req, res, next) {
   res.renderVue('test', data)
 })
 
-app.get('/mongo', function(req, res) {
-  connectToMongo();
-})
-
 app.listen(3000, function () {
   console.log('Сервер запущен на порту 3000!')
 })
-
-function connectToMongo () {
-  MongoClient.connect("mongodb://localhost:27017/users", function(err, db){
-    if(err){
-        //res.send('Mongodb не запущена')
-        //return onsole.log(err);
-        return false;
-    }
-    else{
-      // res.send('Mongodb успешно запущена')
-      return true;
-    }
-    //db.close();
-  });
-}

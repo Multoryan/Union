@@ -37,7 +37,12 @@ const vueOptions = {
     vue: {
         head: {
             meta: [
-                { script: "./js/vue.min.js" }
+                {
+                  script: "./js/vue.min.js"
+                },
+                {
+                  script: "./js/jquery.min.js"
+                }
             ]
         }
     }
@@ -69,7 +74,6 @@ function isAuth(cook, callback){
 }
 
 app.get('/', function (req, res) {
-  //TODO: Нет доступа не авторизованным пользователям
   isAuth(req.cookies, function(result){
     if(result) res.send('Express работает')
     else res.redirect('/auth');
@@ -77,7 +81,10 @@ app.get('/', function (req, res) {
 })
 
 app.get('/registration', function (req, res) {
-  res.renderVue('registration',lang.registration);
+  isAuth(req.cookies, function(result){
+    if(result) res.redirect('/')
+    else res.renderVue('registration', lang.registration);
+  });
 })
 
 // Парсинг форм из POST запросов
@@ -88,12 +95,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.post('/registration', function (req, res) {
   let user = {};
   user.email = req.body.email;
-  // TODO: Функция должна ожидать пока выполнится
   mongo.select(maindb, 'users', user, function(result){
     if(result.length){
-      // TODO: Отрендерить ошибку
-      console.log('Пользователь с таким Email уже существует');
-      res.renderVue('registration',lang.registration);
+      // Пользователь с таким email существует
+      res.send('duplicateEmail');
     }
     else{
       var generatePassword = require('password-generator');
@@ -105,26 +110,54 @@ app.post('/registration', function (req, res) {
       user.activate = false;
       // Дата регистрации
       user.time = Date.now();
+      // Библиотека отправки Email
+      const mailer = require('express-mailer');
+      mailer.extend(app, {
+        from: 'registration@union-org.com',
+        host: 'smtp.gmail.com', // hostname
+        secureConnection: true, // use SSL
+        port: 465, // port for secure SMTP
+        transportMethod: 'SMTP', // default is SMTP. Accepts anything that nodemailer accepts
+        auth: {
+          user: '***',
+          pass: '***'
+        }
+      });
       // TODO: Отправлять письмо с паролем на email
       console.log(password);
       // Вносим пользователя в базу данных
+      // TODO: Отладить работы с Email
+      // TODO: Перенести настройки входа в отдельный файл
+      // TODO: Отредактировать шаблон
+      // TODO: Попробовать отправлять письмо снова, если не дошло
       mongo.insert(maindb, 'users', user, function(result){
+        app.set('views', __dirname + '/views');
+        app.set('view engine', 'pug');
+        app.mailer.send('email/email', {
+          to: user.email, // REQUIRED. This can be a comma delimited string just like a normal email to field.
+          subject: 'Test Email', // REQUIRED.
+          otherProperty: 'Other Property' // All additional properties are also passed to the template as local variables.
+        }, function (err) {
+          if (err) {
+            // handle error
+            console.log(err);
+            res.send('There was an error sending the email');
+            return;
+          }
+          res.send('good');
+        });
         console.log(result);
-        res.redirect('/auth');
+        //res.send('good')
       });
     }
   });
 })
 
-app.get('/vue', function(req, res, next) {
-  const data = {
-    testmess: "Параметр с сервера"
-  }
-  res.renderVue('test', data)
-})
-
 app.get('/auth', function(req, res) {
-  res.renderVue('authorisation', lang.authorisation);
+  isAuth(req.cookies, function(result){
+    if(result) res.redirect('/')
+    else res.renderVue('authorisation', lang.authorisation);
+  })
 })
 
 app.post('/auth', function(req, res) {
@@ -154,7 +187,9 @@ app.post('/auth', function(req, res) {
       }else{
         //TODO: Отправлять сообщение клиенту
         console.log('Неверный пароль');
-        res.renderVue('authorisation', lang.authorisation);
+        let data = Object.assign(lang.authorisation, {wrongPassword: true});
+        console.log(data);
+        res.renderVue('authorisation', data);
       }
     }
     else{

@@ -1,9 +1,12 @@
 {
   "registration": {
-    "buttonValue": "Зарегистрироваться"
+    "buttonValue": "Зарегистрироваться",
+    "issetEmailErr": "Такой Email уже зарегистрирован"
   },
   "authorisation": {
     "placePass": "Пароль",
-    "buttonValue": "Авторизоваться"
+    "buttonValue": "Авторизоваться",
+    "notEmailErr": "Пользователя с таким Email не существует",
+    "notValidErr": "Неверный пароль"
   }
 }

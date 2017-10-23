@@ -24,5 +24,8 @@
     "mongodb": "^2.2.33",
     "password-generator": "^2.2.0",
     "vue": "^2.5.2"
+  },
+  "devDependencies": {
+    "pug": "^2.0.0-rc.4"
   }
 }

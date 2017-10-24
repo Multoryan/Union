@@ -1,12 +1,19 @@
 {
   "registration": {
     "buttonValue": "Зарегистрироваться",
-    "issetEmailErr": "Такой Email уже зарегистрирован"
+    "issetEmailErr": "Такой Email уже зарегистрирован",
+    "sendEmailErr": "Письмо с паролем не отправлено, попробуйте снова",
+    "links": {
+      "authorisation": "Авторизация"
+    }
   },
   "authorisation": {
     "placePass": "Пароль",
     "buttonValue": "Авторизоваться",
     "notEmailErr": "Пользователя с таким Email не существует",
-    "notValidErr": "Неверный пароль"
+    "notValidErr": "Неверный пароль",
+    "links": {
+      "registration": "Регистрация"
+    }
   }
 }

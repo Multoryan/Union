@@ -8,6 +8,14 @@ const assert = require('assert');
 //mongo.select('mongodb://localhost:27017/users', 'test', {});
 //mongo.delete('mongodb://localhost:27017/users', 'test2', {password: '12345'});
 
+// Преобразование в тип ObjectId MongoDB
+const MongoId = require("mongodb").ObjectId;
+exports.toId = (id) => {
+  return new MongoId(id);
+}
+exports.toStr = (objId) => {
+  return objId.toHexString();
+}
 
 // Вставка в базу данных
 // url - адрес базы данных ex: 'mongodb://localhost:27017/users'
@@ -72,17 +80,15 @@ exports.select = (url, collect, where, callback) => {
 // url - адрес базы данных ex: 'mongodb://localhost:27017/users'
 // collect - название коллекции ex: 'information'
 // where - выборка из базы в формате объекта: {id: 1}
-exports.delete = (url, collect, where) => {
-  let res = false;
+exports.delete = (url, collect, where, callback) => {
   MongoClient.connect(url, function(err, db) {
     // Проверяем успешно ли подключение
     assert.equal(null, err);
     var collection = db.collection(collect);
-    collection.delete(where, function(err, result) {
+    collection.deleteOne(where, function(err, result) {
       assert.equal(err, null);
-      res = result;
       db.close();
+      callback(result);
     });
   });
-  return res;
 }

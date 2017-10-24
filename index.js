@@ -18,35 +18,7 @@ const expressVue = require('express-vue');
 // Общедоступные ресурсы
 app.use(express.static(__dirname + '/public'));
 // Настройки Vue.js
-const vueOptions = {
-    rootPath: './views',
-    layout: {
-        html: {
-            start: '<!DOCTYPE html><html>',
-            end: '</html>'
-        },
-        body: {
-            start: '<body>',
-            end: '</body>'
-        },
-        template: {
-            start: '<div id="app">',
-            end: '</div>'
-        }
-    },
-    vue: {
-        head: {
-            meta: [
-                {
-                  script: "./js/vue.min.js"
-                },
-                {
-                  script: "./js/jquery.min.js"
-                }
-            ]
-        }
-    }
-};
+const vueOptions = require('./config/vue.js').options;
 
 // Загрузка файла с языком
 // TODO: Добавить автоопределение на основе req.acceptsLanguages()
@@ -62,12 +34,8 @@ function isAuth(cook, callback){
   const cookies_try = {};
   cookies_try.hash = cook.changes;
   mongo.select(maindb, 'cookies', cookies_try, function(result){
-    if(result.length){
-      if(result[0].userid.toString() === cook.userid)
-        callback(true);
-      else
-        callback(false);
-    }
+    if(result.length)
+        callback(result[0].userid.toString() === cook.userid);
     else
       callback(false);
   })
@@ -75,7 +43,7 @@ function isAuth(cook, callback){
 
 app.get('/', function (req, res) {
   isAuth(req.cookies, function(result){
-    if(result) res.send('Express работает')
+    if(result) res.renderVue('profile')
     else res.redirect('/auth');
   })
 })
@@ -93,6 +61,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/registration', function (req, res) {
+  console.log(req);
   let user = {};
   user.email = req.body.email;
   mongo.select(maindb, 'users', user, function(result){
@@ -112,42 +81,30 @@ app.post('/registration', function (req, res) {
       user.time = Date.now();
       // Библиотека отправки Email
       const mailer = require('express-mailer');
-      mailer.extend(app, {
-        from: 'registration@union-org.com',
-        host: 'smtp.gmail.com', // hostname
-        secureConnection: true, // use SSL
-        port: 465, // port for secure SMTP
-        transportMethod: 'SMTP', // default is SMTP. Accepts anything that nodemailer accepts
-        auth: {
-          user: '***',
-          pass: '***'
-        }
-      });
+      const emailOptions = require('./config/email.js').options;
+      mailer.extend(app, emailOptions);
       // TODO: Отправлять письмо с паролем на email
       console.log(password);
       // Вносим пользователя в базу данных
       // TODO: Отладить работы с Email
-      // TODO: Перенести настройки входа в отдельный файл
       // TODO: Отредактировать шаблон
       // TODO: Попробовать отправлять письмо снова, если не дошло
       mongo.insert(maindb, 'users', user, function(result){
         app.set('views', __dirname + '/views');
         app.set('view engine', 'pug');
-        app.mailer.send('email/email', {
-          to: user.email, // REQUIRED. This can be a comma delimited string just like a normal email to field.
-          subject: 'Test Email', // REQUIRED.
-          otherProperty: 'Other Property' // All additional properties are also passed to the template as local variables.
+        app.mailer.send('email/firstPassword', {
+          to: user.email,
+          subject: 'Регистрация в органайзере Union',
+          password: password
         }, function (err) {
           if (err) {
             // handle error
             console.log(err);
-            res.send('There was an error sending the email');
+            res.send('notSend');
             return;
           }
           res.send('good');
         });
-        console.log(result);
-        //res.send('good')
       });
     }
   });
@@ -178,28 +135,36 @@ app.post('/auth', function(req, res) {
         cookieuser.userid = result[0]._id;
         cookieuser.live = new Date(Date.now() + 60*60*24*30*1000);
         cookieuser.hash = hash_cookie;
-
+        // TODO: Активировать учетную запись пользователя
         mongo.insert(maindb, 'cookies', cookieuser, function(result){
           res.cookie('userid', cookieuser.userid, { expires: cookieuser.live, httpOnly: true });
           res.cookie('changes', cookieuser.hash, { expires: cookieuser.live, httpOnly: true });
           res.redirect('/');
         })
-      }else{
-        //TODO: Отправлять сообщение клиенту
-        console.log('Неверный пароль');
-        let data = Object.assign(lang.authorisation, {wrongPassword: true});
-        console.log(data);
-        res.renderVue('authorisation', data);
       }
+      else res.send("wrongPass");
     }
-    else{
-      //TODO: Отправлять сообщение пользователю
-      console.log('Нет пользователя с таким Email')
-      res.renderVue('authorisation', lang.authorisation);
-    }
+    else res.send("notIsset");
   })
 
 });
+
+app.get("/exit", function (req, res) {
+  // Удаляем из базы
+  const cookie = {};
+  cookie.userid = mongo.toId(req.cookies.userid);
+  cookie.hash = req.cookies.changes;
+  mongo.delete(maindb, 'cookies', cookie, function(result){
+    if(result){
+      res.clearCookie('userid');
+      res.clearCookie('changes');
+      res.send('exit');
+    }
+    else{
+      res.send('notexit');
+    }
+  })
+})
 
 app.listen(3000, function () {
   console.log('Сервер запущен на порту 3000!')

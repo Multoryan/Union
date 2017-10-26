@@ -41,9 +41,21 @@ function isAuth(cook, callback){
   })
 }
 
+app.get('/org', function (req, res) {
+  var path = require("path");
+  res.sendFile(path.join(__dirname + '/public/test.html'));
+})
+
 app.get('/', function (req, res) {
   isAuth(req.cookies, function(result){
     if(result) res.renderVue('profile')
+    else res.redirect('/auth');
+  })
+})
+
+app.get('/change', function (req, res) {
+  isAuth(req.cookies, function(result) {
+    if(result) res.renderVue('password')
     else res.redirect('/auth');
   })
 })
@@ -61,7 +73,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/registration', function (req, res) {
-  console.log(req);
   let user = {};
   user.email = req.body.email;
   mongo.select(maindb, 'users', user, function(result){

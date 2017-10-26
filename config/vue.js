@@ -22,9 +22,6 @@ exports.options = {
                 },
                 {
                   script: "./js/jquery.min.js"
-                },
-                {
-                  script: "https://www.google.com/recaptcha/api.js"
                 }
             ]
         }

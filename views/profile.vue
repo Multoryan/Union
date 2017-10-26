@@ -2,14 +2,15 @@
   <div class="template">
     <p>Вы авторизованы</p>
     <button @click="exit()">Exit</button>
+    <a href="/change">Сменить пароль</a>
+    <a href="/org">Органайзер</a>
   </div>
 </template>
 
 <script>
 export default {
-  data () {
+  data: function () {
     return {
-
     }
   },
   methods: {

@@ -73,52 +73,67 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/registration', function (req, res) {
-  let user = {};
-  user.email = req.body.email;
-  mongo.select(maindb, 'users', user, function(result){
-    if(result.length){
-      // Пользователь с таким email существует
-      res.send('duplicateEmail');
-    }
-    else{
-      var generatePassword = require('password-generator');
-      const password = generatePassword();
-      var salt = bcrypt.genSaltSync(10);
-      var hash = bcrypt.hashSync(password, salt);
-      user.password = hash;
-      // Учетная запись по умолчанию не активирована
-      user.activate = false;
-      // Дата регистрации
-      user.time = Date.now();
-      // Библиотека отправки Email
-      const mailer = require('express-mailer');
-      const emailOptions = require('./config/email.js').options;
-      mailer.extend(app, emailOptions);
-      // TODO: Отправлять письмо с паролем на email
-      console.log(password);
-      // Вносим пользователя в базу данных
-      // TODO: Отладить работы с Email
-      // TODO: Отредактировать шаблон
-      // TODO: Попробовать отправлять письмо снова, если не дошло
-      mongo.insert(maindb, 'users', user, function(result){
-        app.set('views', __dirname + '/views');
-        app.set('view engine', 'pug');
-        app.mailer.send('email/firstPassword', {
-          to: user.email,
-          subject: 'Регистрация в органайзере Union',
-          password: password
-        }, function (err) {
-          if (err) {
-            // handle error
-            console.log(err);
-            res.send('notSend');
-            return;
-          }
-          res.send('good');
-        });
+  var request = require('request');
+  // Запрос на валидность капчи Google
+  request.post({
+    url:'https://www.google.com/recaptcha/api/siteverify',
+    form: {secret:'6LeCMDYUAAAAAECk9BpGuiHxH_6W9DrmdHKxDpsi',
+          response: req.body['g-recaptcha-response']
+    }},
+    function(err,httpResponse,body){
+      console.log(JSON.parse(body));
+      if (!JSON.parse(body).success){
+        res.send('bot')
+        return;
+      }
+      let user = {};
+      user.email = req.body.email;
+      mongo.select(maindb, 'users', user, function(result){
+        if(result.length){
+          // Пользователь с таким email существует
+          res.send('duplicateEmail');
+        }
+        else{
+          var generatePassword = require('password-generator');
+          const password = generatePassword();
+          var salt = bcrypt.genSaltSync(10);
+          var hash = bcrypt.hashSync(password, salt);
+          user.password = hash;
+          // Учетная запись по умолчанию не активирована
+          user.activate = false;
+          // Дата регистрации
+          user.time = Date.now();
+          // Библиотека отправки Email
+          const mailer = require('express-mailer');
+          const emailOptions = require('./config/email.js').options;
+          mailer.extend(app, emailOptions);
+          // TODO: Отправлять письмо с паролем на email
+          console.log(password);
+          // Вносим пользователя в базу данных
+          // TODO: Отладить работы с Email
+          // TODO: Отредактировать шаблон
+          // TODO: Попробовать отправлять письмо снова, если не дошло
+          mongo.insert(maindb, 'users', user, function(result){
+            app.set('views', __dirname + '/views');
+            app.set('view engine', 'pug');
+            app.mailer.send('email/firstPassword', {
+              to: user.email,
+              subject: 'Регистрация в органайзере Union',
+              password: password
+            }, function (err) {
+              if (err) {
+                // handle error
+                //console.log(err);
+                res.send('notSend');
+                return;
+              }
+              res.send('good');
+            });
+          });
+        }
       });
-    }
-  });
+    })
+
 })
 
 app.get('/auth', function(req, res) {

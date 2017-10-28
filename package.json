@@ -23,6 +23,8 @@
     "jquery": "^3.2.1",
     "mongodb": "^2.2.33",
     "password-generator": "^2.2.0",
+    "request": "^2.83.0",
+    "semantic-ui": "^2.2.13",
     "vue": "^2.5.2"
   },
   "devDependencies": {

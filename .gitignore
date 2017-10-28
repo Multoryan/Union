@@ -3,3 +3,6 @@ documentation/
 
 # Модули
 node_modules/
+
+# Исходные файлы Semantic
+semantic/

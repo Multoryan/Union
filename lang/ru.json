@@ -1,8 +1,10 @@
 {
   "registration": {
+    "title": "Регистрация",
     "buttonValue": "Зарегистрироваться",
     "issetEmailErr": "Такой Email уже зарегистрирован",
     "sendEmailErr": "Письмо с паролем не отправлено, попробуйте снова",
+    "testBot": "Вы не прошли проверку на робота",
     "links": {
       "authorisation": "Авторизация"
     }

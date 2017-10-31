@@ -6,7 +6,7 @@ const app = express()
 const mongo = require('./models/connect.js');
 const maindb = "mongodb://localhost:27017/union";
 
-// Библиотка для усиления сложности
+// Библиотка для усиления сложности взлома паролей
 const bcrypt = require('bcryptjs');
 
 // Поддержка Cookie файлов
@@ -63,7 +63,7 @@ app.get('/change', function (req, res) {
 app.get('/registration', function (req, res) {
   isAuth(req.cookies, function(result){
     if(result) res.redirect('/')
-    else res.renderVue('registration', lang.registration);
+    else res.renderVue('registration', lang.login);
   });
 })
 
@@ -81,19 +81,22 @@ app.post('/registration', function (req, res) {
           response: req.body['g-recaptcha-response']
     }},
     function(err,httpResponse,body){
-      console.log(JSON.parse(body));
-      if (!JSON.parse(body).success){
-        res.send('bot')
+      // Капча не пройдена
+      if (!JSON.parse(body).success) {
+        res.send('bot');
         return;
       }
+      // Создаем объект пользователя с указанным email
+      // Именно объект передается в mongo.select
       let user = {};
       user.email = req.body.email;
       mongo.select(maindb, 'users', user, function(result){
-        if(result.length){
+        // Если результат вернул пустую строку, то совпадений не найдено
+        if (result.length)
           // Пользователь с таким email существует
           res.send('duplicateEmail');
-        }
         else{
+          // Генерируем пароль
           var generatePassword = require('password-generator');
           const password = generatePassword();
           var salt = bcrypt.genSaltSync(10);
@@ -113,6 +116,7 @@ app.post('/registration', function (req, res) {
           // TODO: Отладить работы с Email
           // TODO: Отредактировать шаблон
           // TODO: Попробовать отправлять письмо снова, если не дошло
+          // Вставка нового пользователя в БД
           mongo.insert(maindb, 'users', user, function(result){
             app.set('views', __dirname + '/views');
             app.set('view engine', 'pug');
@@ -121,9 +125,8 @@ app.post('/registration', function (req, res) {
               subject: 'Регистрация в органайзере Union',
               password: password
             }, function (err) {
+              // Если письмо не отправлено
               if (err) {
-                // handle error
-                //console.log(err);
                 res.send('notSend');
                 return;
               }
@@ -136,17 +139,18 @@ app.post('/registration', function (req, res) {
 
 })
 
-app.get('/auth', function(req, res) {
-  isAuth(req.cookies, function(result){
-    if(result) res.redirect('/')
-    else res.renderVue('authorisation', lang.authorisation);
-  })
-})
+// app.get('/auth', function(req, res) {
+//   isAuth(req.cookies, function(result){
+//     if(result) res.redirect('/')
+//     else res.renderVue('authorisation', lang.authorisation);
+//   })
+// })
 
 app.post('/auth', function(req, res) {
   mongo.select(maindb, 'users', {email: req.body.email}, function(result){
     if(result.length){
       const hash = result[0].password;
+      console.log(req.body)
       if(bcrypt.compareSync(req.body.password, hash)){
 
         // Пользователь прошел авторизацию
@@ -186,9 +190,8 @@ app.get("/exit", function (req, res) {
       res.clearCookie('changes');
       res.send('exit');
     }
-    else{
+    else
       res.send('notexit');
-    }
   })
 })
 

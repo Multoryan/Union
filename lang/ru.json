@@ -1,21 +1,19 @@
 {
-  "registration": {
-    "title": "Регистрация",
-    "buttonValue": "Зарегистрироваться",
-    "issetEmailErr": "Такой Email уже зарегистрирован",
-    "sendEmailErr": "Письмо с паролем не отправлено, попробуйте снова",
-    "testBot": "Вы не прошли проверку на робота",
-    "links": {
-      "authorisation": "Авторизация"
-    }
-  },
-  "authorisation": {
-    "placePass": "Пароль",
-    "buttonValue": "Авторизоваться",
-    "notEmailErr": "Пользователя с таким Email не существует",
-    "notValidErr": "Неверный пароль",
-    "links": {
-      "registration": "Регистрация"
+  "login": {
+    "registration": {
+      "title": "Регистрация",
+      "buttonValue": "Зарегистрироваться",
+      "issetEmailErr": "Такой Email уже зарегистрирован",
+      "sendEmailErr": "Письмо с паролем не отправлено, попробуйте снова",
+      "testBot": "Вы не прошли проверку на робота"
+    },
+    "authorisation": {
+      "title": "Авторизация",
+      "placePass": "Пароль",
+      "buttonValue": "Авторизоваться",
+      "notEmailErr": "Пользователя с таким Email не существует",
+      "notValidErr": "Неверный пароль",
+      "buttonValue": "Войти"
     }
   }
 }
